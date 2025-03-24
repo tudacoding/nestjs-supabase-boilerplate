@@ -1,20 +1,20 @@
 import { Injectable } from '@nestjs/common';
 import { SupabaseService } from '../supabase/supabase.service';
-import { User } from './interfaces/user.interface';
+import { Course } from './interfaces/course.interface';
 
 @Injectable()
-export class UsersService {
+export class CoursesService {
   constructor(private supabaseService: SupabaseService) {}
 
-  async getAllUsers(): Promise<User[]> {
+  async getAllCourses(): Promise<Course[]> {
     const { data, error } = await this.supabaseService.client
-      .from('users')
+      .from('courses')
       .select('*');
 
     if (error) {
       throw error;
     }
 
-    return data as User[];
+    return data as Course[];
   }
 }
