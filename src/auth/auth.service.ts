@@ -1,8 +1,4 @@
-import {
-  Injectable,
-  UnauthorizedException,
-  BadRequestException,
-} from '@nestjs/common';
+import { Injectable, UnauthorizedException } from '@nestjs/common';
 import { SupabaseService } from '../supabase/supabase.service';
 
 @Injectable()
@@ -15,7 +11,7 @@ export class AuthService {
         await this.supabaseService.client.auth.signInWithOAuth({
           provider: 'google',
           options: {
-            redirectTo: `${process.env.SUPABASE_URL}/auth/v1/callback`,
+            redirectTo: `${process.env.CLIENT_APP_URL}/auth/callback`,
           },
         });
 
@@ -24,31 +20,6 @@ export class AuthService {
     } catch (error) {
       if (error instanceof UnauthorizedException) throw error;
       throw new UnauthorizedException('Failed to initiate Google sign in');
-    }
-  }
-
-  async handleGoogleCallback(code: string) {
-    try {
-      if (!code) {
-        throw new BadRequestException('Authorization code is required');
-      }
-
-      const { data, error } =
-        await this.supabaseService.client.auth.exchangeCodeForSession(code);
-
-      if (error) throw new UnauthorizedException(error.message);
-
-      return {
-        user: data.user,
-        session: data.session,
-        access_token: data.session?.access_token,
-        refresh_token: data.session?.refresh_token,
-      };
-    } catch (error) {
-      if (error instanceof BadRequestException) {
-        throw error;
-      }
-      throw new UnauthorizedException('Failed to handle callback');
     }
   }
 
@@ -92,6 +63,41 @@ export class AuthService {
     } catch (error) {
       if (error instanceof UnauthorizedException) throw error;
       throw new UnauthorizedException('Failed to get user');
+    }
+  }
+
+  async verifyGoogleToken(params: {
+    access_token: string;
+    refresh_token: string;
+    provider_token: string;
+  }) {
+    try {
+      // Verify access token với Supabase
+      const { data: sessionData, error: sessionError } =
+        await this.supabaseService.client.auth.setSession({
+          access_token: params.access_token,
+          refresh_token: params.refresh_token,
+        });
+      if (sessionError) {
+        throw new UnauthorizedException(sessionError.message);
+      }
+
+      // Verify provider token (Google token)
+      const { error: userError } =
+        await this.supabaseService.client.auth.getUser(params.access_token);
+      if (userError) {
+        throw new UnauthorizedException(userError.message);
+      }
+
+      return {
+        session: sessionData.session,
+        isValid: true,
+      };
+    } catch (error) {
+      if (error instanceof UnauthorizedException) {
+        throw error;
+      }
+      throw new UnauthorizedException('Failed to verify tokens');
     }
   }
 }

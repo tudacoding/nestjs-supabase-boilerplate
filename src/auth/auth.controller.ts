@@ -1,4 +1,4 @@
-import { Controller, Get, Query } from '@nestjs/common';
+import { Controller, Get, Post, Body } from '@nestjs/common';
 import { AuthService } from './auth.service';
 
 @Controller('auth')
@@ -16,11 +16,6 @@ export class AuthController {
     return this.authService.signInWithGithub();
   }
 
-  @Get('callback')
-  async handleCallback(@Query('code') code: string) {
-    return await this.authService.handleGoogleCallback(code);
-  }
-
   @Get('signout')
   async signOut() {
     return await this.authService.signOut();
@@ -29,5 +24,17 @@ export class AuthController {
   @Get('me')
   async getCurrentUser() {
     return this.authService.getUser();
+  }
+
+  @Post('verify')
+  async verifyTokens(
+    @Body()
+    params: {
+      access_token: string;
+      refresh_token: string;
+      provider_token: string;
+    },
+  ) {
+    return this.authService.verifyGoogleToken(params);
   }
 }
