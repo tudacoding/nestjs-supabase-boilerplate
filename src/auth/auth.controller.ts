@@ -1,15 +1,14 @@
-import { Controller, Get, Query, Res } from '@nestjs/common';
+import { Controller, Get, Query } from '@nestjs/common';
 import { AuthService } from './auth.service';
-import { Response } from 'express';
 
 @Controller('auth')
 export class AuthController {
   constructor(private readonly authService: AuthService) {}
 
   @Get('google')
-  async signInWithGoogle(@Res() res: Response) {
+  async signInWithGoogle() {
     const { url } = await this.authService.signInWithGoogle();
-    res.redirect(url);
+    return { url };
   }
 
   @Get('github')
